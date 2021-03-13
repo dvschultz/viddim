@@ -7,6 +7,7 @@ import shutil
 # print(cv2.__version__)
 
 riddims = [
+	{ "name": "hold3", "beat": (72) },
 	{ "name": "hold2", "beat": (48) },
 	{ "name": "hold", "beat": (24) },
 	{ "name": "four_24", "beat": (4,4,4,4,4,4) },
@@ -44,7 +45,7 @@ def make_video(output_folder,folder_path):
 def viddim_files(files):
 	# print(len(files))
 
-	playlist = ["hold2","one_24","four_24","four_24","one_24"]
+	playlist = ["hold3","hold2","hold","one_24","one_24","four_24","four_24"]
 
 	frame_folder = os.path.join(args.output_folder,'frames')
 	if not os.path.exists(frame_folder):
