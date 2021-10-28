@@ -3,6 +3,7 @@ import argparse
 import os
 import subprocess
 import shutil
+import random
 
 # print(cv2.__version__)
 
@@ -18,6 +19,10 @@ def parse_args():
 	desc = "make dance music with images" 
 	parser = argparse.ArgumentParser(description=desc)
 
+	parser.add_argument('-f','--framerate', type=int,
+		default=24,
+		help='video framerate (default: %(default)s)')
+
 	parser.add_argument('-i','--input_folder', type=str,
 		default='./input/',
 		help='Directory path to the inputs folder. (default: %(default)s)')
@@ -30,16 +35,18 @@ def parse_args():
 		default='./output/',
 		help='Directory path to the outputs folder. (default: %(default)s)')
 
-	parser.add_argument('-v','--viddims', type=str,
+	parser.add_argument('-r','--riddims', type=str,
 		default=None,
 		help='Directory path to a file containing viddims. (default: %(default)s)')
+
+	parser.add_argument('--random', dest='random', action='store_true')
 
 
 	args = parser.parse_args()
 	return args
 
-def make_video(output_folder,folder_path):
-	cmd=f'ffmpeg -y -r 24 -i "{folder_path}/%09d.png" -vcodec libx264 -pix_fmt yuv420p "{output_folder}/riddim.mp4"'
+def make_video(output_folder,folder_path,framerate):
+	cmd=f'ffmpeg -y -r {framerate} -i "{folder_path}/%09d.png" -vcodec libx264 -pix_fmt yuv420p "{output_folder}/riddim.mp4"'
 	subprocess.call(cmd, shell=True)
 
 def viddim_files(riddims, playlist, files):
@@ -50,7 +57,10 @@ def viddim_files(riddims, playlist, files):
 	
 
 	count = 0
-	fcount = 0
+	if (args.random):
+		fcount = random.randint(0, len(files))
+	else:
+		fcount = 0
 	# for filename in files:
 	# 	print(filename)
 
@@ -64,13 +74,12 @@ def viddim_files(riddims, playlist, files):
 	print(len(playlist))
 
 	for p in playlist:
-		print(p)
+		
 		if fcount > len(files)-1: 
 			print('out of film')
 			break
 		
 		riddim = next(item for item in riddims if item["name"] == p)
-		print(riddim)
 
 		if(type(riddim['beat']) is int):
 			file_path = os.path.join(args.input_folder, files[fcount])
@@ -79,7 +88,10 @@ def viddim_files(riddims, playlist, files):
 				shutil.copy2(file_path,new_path)
 				count+=1
 
-			fcount+=1
+			if (args.random):
+				fcount = random.randint(0, len(files))
+			else:
+				fcount+=1
 
 		else:
 			for bcount,el in enumerate(riddim['beat']):
@@ -96,11 +108,14 @@ def viddim_files(riddims, playlist, files):
 					shutil.copy2(file_path,new_path)
 					count+=1
 
-				fcount+=1
+				if (args.random):
+					fcount = random.randint(0, len(files))
+				else:
+					fcount+=1
 
 
 	print('out of beats')
-	make_video(args.output_folder,frame_folder)
+	make_video(args.output_folder,frame_folder, args.framerate)
 	print(f'frames used: {fcount}')
 
 	# for filename in files:
@@ -131,9 +146,9 @@ def main():
 	# files = [ f for f in os.listdir(args.input_folder) if os.path.isfile(os.path.join(args.input_folder, f))]
 	files = sort_nicely(files)
 
-	if(args.viddims):
+	if(args.riddims):
 		riddims = []
-		with open(args.viddims) as file:
+		with open(args.riddims) as file:
 		    for line in file:
 		    	parts = line.strip().split(':')
 		    	beats = parts[1].strip().split(',')
