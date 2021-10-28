@@ -6,14 +6,6 @@ import shutil
 
 # print(cv2.__version__)
 
-riddims = [
-	{ "name": "hold3", "beat": (72) },
-	{ "name": "hold2", "beat": (48) },
-	{ "name": "hold", "beat": (24) },
-	{ "name": "four_24", "beat": (4,4,4,4,4,4) },
-	{ "name": "one_24", "beat": (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1) },
-]
-
 def sort_nicely( l ):
 	""" Sort the given list in the way that humans expect.
 	"""
@@ -30,22 +22,27 @@ def parse_args():
 		default='./input/',
 		help='Directory path to the inputs folder. (default: %(default)s)')
 
+	parser.add_argument('-p','--playlist', type=str,
+		default=None,
+		help='Directory path to a file containing a playlist. (default: %(default)s)')
+
 	parser.add_argument('-o','--output_folder', type=str,
 		default='./output/',
 		help='Directory path to the outputs folder. (default: %(default)s)')
+
+	parser.add_argument('-v','--viddims', type=str,
+		default=None,
+		help='Directory path to a file containing viddims. (default: %(default)s)')
 
 
 	args = parser.parse_args()
 	return args
 
 def make_video(output_folder,folder_path):
-	cmd=f'ffmpeg -y -r 24 -i {folder_path}/%09d.png -vcodec libx264 -pix_fmt yuv420p {output_folder}/riddim.mp4'
+	cmd=f'ffmpeg -y -r 24 -i "{folder_path}/%09d.png" -vcodec libx264 -pix_fmt yuv420p "{output_folder}/riddim.mp4"'
 	subprocess.call(cmd, shell=True)
 
-def viddim_files(files):
-	# print(len(files))
-
-	playlist = ["hold3","hold2","hold","one_24","one_24","four_24","four_24"]
+def viddim_files(riddims, playlist, files):
 
 	frame_folder = os.path.join(args.output_folder,'frames')
 	if not os.path.exists(frame_folder):
@@ -64,11 +61,16 @@ def viddim_files(files):
 
 	# 	count+=1
 
+	print(len(playlist))
+
 	for p in playlist:
-		if fcount > len(files)-1: break
+		print(p)
+		if fcount > len(files)-1: 
+			print('out of film')
+			break
 		
 		riddim = next(item for item in riddims if item["name"] == p)
-		# print(riddim['beat'])
+		print(riddim)
 
 		if(type(riddim['beat']) is int):
 			file_path = os.path.join(args.input_folder, files[fcount])
@@ -81,7 +83,10 @@ def viddim_files(files):
 
 		else:
 			for bcount,el in enumerate(riddim['beat']):
-				if fcount > len(files)-1: break
+				# print(el)
+				if fcount > len(files)-1: 
+					print('out of film')
+					break
 				# print(el)
 				# print(files[fcount])
 				file_path = os.path.join(args.input_folder, files[fcount])
@@ -93,7 +98,10 @@ def viddim_files(files):
 
 				fcount+=1
 
+
+	print('out of beats')
 	make_video(args.output_folder,frame_folder)
+	print(f'frames used: {fcount}')
 
 	# for filename in files:
 	# 	print(filename)
@@ -123,7 +131,45 @@ def main():
 	# files = [ f for f in os.listdir(args.input_folder) if os.path.isfile(os.path.join(args.input_folder, f))]
 	files = sort_nicely(files)
 
-	viddim_files(files)
+	if(args.viddims):
+		riddims = []
+		with open(args.viddims) as file:
+		    for line in file:
+		    	parts = line.strip().split(':')
+		    	beats = parts[1].strip().split(',')
+		    	riddims.append({ "name": str(parts[0].strip()), "beat": tuple(int(b) for b in beats) })
+		#print(riddims)
+	else:
+		# some default riddims to use
+		riddims = [
+			{ "name": "hold3", "beat": (72) },
+			{ "name": "hold2", "beat": (48) },
+			{ "name": "hold", "beat": (24) },
+			{ "name": "four_24", "beat": (4,4,4,4,4,4) },
+			{ "name": "second_holdend", "beat": (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,36) },
+			{ "name": "one_24", "beat": (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1) },
+		]
+
+	if(args.playlist):
+		playlist = []
+		with open(args.playlist) as file:
+		    for line in file:
+		    	for el in line.strip().split(','):
+		    		playlist.append(str(el.strip()))
+		print(playlist)
+	else:
+		playlist = [
+			"one_24","one_24","four_24","four_24",
+			"one_24","one_24","four_24","four_24",
+			"hold","hold","four_24","four_24","four_24","one_24","one_24","hold",
+			"one_24","one_24","one_24","one_24","four_24","four_24",
+			"four_24","four_24","hold","hold","hold","hold","one_24","one_24","four_24","four_24",
+			"one_24","one_24","hold2","one_24","one_24","hold", # lpips,interpolation,lpips,truncation
+			"one_24","one_24","one_24","one_24","hold",
+			"four_24","one_24","one_24","one_24","one_24",
+		]
+
+	viddim_files(riddims, playlist, files)
 
 
 
