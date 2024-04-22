@@ -1,3 +1,4 @@
+from __future__ import generator_stop
 import re
 import argparse
 import os
@@ -79,31 +80,20 @@ def viddim_files(riddims, playlist, files):
 			print('out of film')
 			break
 		
-		riddim = next(item for item in riddims if item["name"] == p)
-
-		if(type(riddim['beat']) is int):
-			file_path = os.path.join(args.input_folder, files[fcount])
-			for b in range(riddim['beat']):
-				new_path = os.path.join(frame_folder, str(count).zfill(9)+'.png')
-				shutil.copy2(file_path,new_path)
-				count+=1
-
-			if (args.random):
-				fcount = random.randint(0, len(files))
+		if (p.startswith("goto")):
+			goto = p.split(":")[-1]
+			# print(goto)
+			if goto.startswith("+") or goto.startswith("-"):
+				fcount = fcount + int(goto)
 			else:
-				fcount+=1
-
+				fcount = int(goto)
 		else:
-			for bcount,el in enumerate(riddim['beat']):
-				# print(el)
-				if fcount > len(files)-1: 
-					print('out of film')
-					break
-				# print(el)
-				# print(files[fcount])
+			riddim = next(item for item in riddims if (item["name"] == p) )
+		
+			print(fcount)
+			if(type(riddim['beat']) is int):
 				file_path = os.path.join(args.input_folder, files[fcount])
-
-				for b in range(el):
+				for b in range(riddim['beat']):
 					new_path = os.path.join(frame_folder, str(count).zfill(9)+'.png')
 					shutil.copy2(file_path,new_path)
 					count+=1
@@ -112,6 +102,26 @@ def viddim_files(riddims, playlist, files):
 					fcount = random.randint(0, len(files))
 				else:
 					fcount+=1
+
+			else:
+				for bcount,el in enumerate(riddim['beat']):
+					# print(el)
+					if fcount > len(files)-1: 
+						print('out of film')
+						break
+					# print(el)
+					# print(files[fcount])
+					file_path = os.path.join(args.input_folder, files[fcount])
+
+					for b in range(el):
+						new_path = os.path.join(frame_folder, str(count).zfill(9)+'.png')
+						shutil.copy2(file_path,new_path)
+						count+=1
+
+					if (args.random):
+						fcount = random.randint(0, len(files))
+					else:
+						fcount+=1
 
 
 	print('out of beats')
